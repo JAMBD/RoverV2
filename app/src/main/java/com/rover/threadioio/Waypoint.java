@@ -2,6 +2,7 @@ package com.rover.threadioio;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,19 +19,28 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class Waypoint extends Fragment {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-
+    private static View rootView;
     public Waypoint(){
-
+        mMap = null;
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        final View rootView = inflater.inflate(R.layout.maptab, container, false);
+        if(rootView != null){
+            ViewGroup parent = (ViewGroup) rootView.getParent();
+            if(parent != null)
+                parent.removeView(rootView);
+        }
+        try {
+            rootView = inflater.inflate(R.layout.maptab, container, false);
+        }catch(InflateException e){
+
+        }
         setUpMapIfNeeded();
         return rootView;
     }
+
 
     /**
      * Sets up the maptab if it is possible to do so (i.e., the Google Play services APK is correctly

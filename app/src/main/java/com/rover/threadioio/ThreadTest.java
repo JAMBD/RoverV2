@@ -14,8 +14,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import ioio.lib.util.android.IOIOAndroidApplicationHelper;
+
 
 public class ThreadTest extends ActionBarActivity {
+
+    private final IOIOAndroidApplicationHelper helper_ = new IOIOAndroidApplicationHelper(
+            this, new IOIOThread());
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -45,9 +50,19 @@ public class ThreadTest extends ActionBarActivity {
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-
+        helper_.create();
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        helper_.start();
+    }
+    @Override
+    protected void onStop() {
+        helper_.stop();
+        super.onStop();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -89,7 +104,7 @@ public class ThreadTest extends ActionBarActivity {
             switch (position) {
                 case 0:
                     return new Waypoint();
-                case 1:
+                case 2:
                     return new OverRide();
 
 
