@@ -19,8 +19,10 @@ import ioio.lib.util.android.IOIOAndroidApplicationHelper;
 
 public class ThreadTest extends ActionBarActivity {
 
+    public IOIOThread ioio = new IOIOThread();
+
     private final IOIOAndroidApplicationHelper helper_ = new IOIOAndroidApplicationHelper(
-            this, new IOIOThread());
+            this, ioio);
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -105,7 +107,9 @@ public class ThreadTest extends ActionBarActivity {
                 case 0:
                     return new Waypoint();
                 case 2:
-                    return new OverRide();
+                    OverRide or = new OverRide();
+                    or.setIOIO(ioio);
+                    return or;
 
 
             }

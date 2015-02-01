@@ -1,6 +1,9 @@
 package com.rover.threadioio;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 
@@ -19,9 +22,25 @@ public class IOIOThread implements IOIOLooperProvider {
 
     @Override
     public IOIOLooper createIOIOLooper(String connectionType, Object extra) {
-        Log.i("IOIOservice", "IOIO setup");
         return createIOIOLooper();
+    }
+    public boolean ledSTATE = true;
+    public float velocity = 0;
+    public float angle = 0;
 
+    public Float speed1;
+    public Float speed2;
+    public Float speed3;
+    public Float speed4;
+
+    public void set_led(boolean state){
+        ledSTATE = state;
+    }
+    public void set_vel(float vel){
+        velocity = vel;
+    }
+    public void set_ang(float ang){
+        angle = ang;
     }
 
     class Looper extends BaseIOIOLooper {
@@ -31,6 +50,8 @@ public class IOIOThread implements IOIOLooperProvider {
         private PID pid2_;
         private PID pid3_;
         private PID pid4_;
+
+
 
         /**
          * Called every time a connection with IOIO has been established.
@@ -70,10 +91,10 @@ public class IOIOThread implements IOIOLooperProvider {
          */
         @Override
         public void loop() throws ConnectionLostException, InterruptedException {
-            led_.write(false);
+            led_.write(ledSTATE);
             try {
-                float driveVel = 0;
-                float driveAng = 0;
+                float driveVel = velocity;
+                float driveAng = angle;
 
                 float left = driveVel * (float)Math.cos((double)driveAng) + driveVel * (float)Math.sin((double)driveAng);
                 float right = -driveVel * (float)Math.cos((double)driveAng) + driveVel * (float)Math.sin((double)driveAng);
@@ -84,6 +105,11 @@ public class IOIOThread implements IOIOLooperProvider {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            speed1 = -pid1_.getSpeed();
+            speed2 = -pid2_.getSpeed();
+            speed3 = pid3_.getSpeed();
+            speed4 = pid4_.getSpeed();
             Thread.sleep(10);
         }
 
@@ -94,7 +120,6 @@ public class IOIOThread implements IOIOLooperProvider {
          */
         @Override
         public void disconnected() {
-            Log.i("IOIOservice", "IOIO bye bye");
 
         }
 
