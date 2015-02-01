@@ -112,4 +112,16 @@ public class OverRide extends Fragment {
         return rootView;
     }
 
+    // Force manual control
+    @Override
+    public void onPause() {
+        ioio.set_override(false);
+    }
+
+    // Allow automatic control
+    @Override
+    public void onResume() {
+        ioio.set_override(true);
+    }
+
 }

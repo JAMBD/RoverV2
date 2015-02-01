@@ -1,5 +1,6 @@
 package com.rover.threadioio;
 
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.InflateException;
@@ -11,17 +12,30 @@ import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import java.util.ArrayList;
 
 /**
  * Created by freelance on 31/01/15.
  */
-public class Waypoint extends Fragment {
+public class Waypoint extends Fragment implements OnTargetReachedListener {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
+    private ArrayList<Marker> markers;
+    Polyline path;
     private static View rootView;
+    private IOIOThread ioio;
+
     public Waypoint(){
         mMap = null;
+    }
+
+    public void setIOIO(IOIOThread ioio){
+        this.ioio = ioio;
     }
 
     @Override
@@ -76,6 +90,72 @@ public class Waypoint extends Fragment {
      * This should only be called once and when we are sure that {@link #mMap} is not null.
      */
     private void setUpMap() {
-        mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
+        ioio.set_at_target_cb(this);
+        markers = new ArrayList<>();
+        mMap.setMyLocationEnabled(true);
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                MarkerOptions mo = new MarkerOptions()
+                        .position(latLng)
+                        .title("Click to delete way point")
+                        .draggable(true);
+                Marker m = mMap.addMarker(mo);
+                markers.add(m);
+                draw_robot_path();
+                Log.d("Nav", "Add marker");
+            }
+        });
+        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                markers.remove(marker);
+                marker.remove();
+                draw_robot_path();
+            }
+        });
+        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                draw_robot_path();
+            }
+        });
+    }
+
+    private void draw_robot_path() {
+        if (path != null) path.remove();
+        PolylineOptions p = new PolylineOptions();
+        for (Marker m : markers) {
+            p.add(m.getPosition());
+        }
+        path = mMap.addPolyline(p);
+
+        if (!markers.isEmpty()) {
+            Location target = new Location("");
+            target.setLongitude(markers.get(0).getPosition().longitude);
+            target.setLatitude(markers.get(0).getPosition().latitude);
+            ioio.set_target(target);
+        } else {
+            ioio.set_target(null);
+        }
+    }
+
+    @Override
+    public void OnFinished() {
+        Log.d("WP", "Reached target");
+        Marker m = markers.remove(0);
+        m.remove();
+        draw_robot_path();
     }
 }
+

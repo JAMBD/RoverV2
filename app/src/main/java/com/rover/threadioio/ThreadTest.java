@@ -19,10 +19,9 @@ import ioio.lib.util.android.IOIOAndroidApplicationHelper;
 
 public class ThreadTest extends ActionBarActivity {
 
-    public IOIOThread ioio = new IOIOThread();
+    public IOIOThread ioio;
 
-    private final IOIOAndroidApplicationHelper helper_ = new IOIOAndroidApplicationHelper(
-            this, ioio);
+    private IOIOAndroidApplicationHelper helper_;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -43,7 +42,8 @@ public class ThreadTest extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thread_test);
-
+        ioio = new IOIOThread(this);
+        helper_ = new IOIOAndroidApplicationHelper(this, ioio);
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -105,7 +105,9 @@ public class ThreadTest extends ActionBarActivity {
             // Return a PlaceholderFragment (defined as a static inner class below).
             switch (position) {
                 case 0:
-                    return new Waypoint();
+                    Waypoint wp = new Waypoint();
+                    wp.setIOIO(ioio);
+                    return wp;
                 case 2:
                     OverRide or = new OverRide();
                     or.setIOIO(ioio);
