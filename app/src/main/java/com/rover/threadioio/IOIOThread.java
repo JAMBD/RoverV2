@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.PID;
+import ioio.lib.api.PwmOutput;
 import ioio.lib.api.exception.ConnectionLostException;
 import ioio.lib.util.BaseIOIOLooper;
 import ioio.lib.util.IOIOLooper;
@@ -71,7 +72,7 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
     public float angle = 0;
     private Location target;
     private boolean is_at_target;
-    private float turn_factor = 1.0f;
+    private float turn_factor = -0.008f;
     private float target_dist_thresh = 2.0f;
     private boolean override;
     private OnTargetReachedListener onTargetReachedListener;
@@ -81,18 +82,17 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
     public Float speed3;
     public Float speed4;
 
-    public void set_led(boolean state){
-        ledSTATE = state;
-    }
+    public void set_led(boolean state){ if(override) ledSTATE = state;}
     public void set_vel(float vel){
-        velocity = vel;
+        if(override) velocity = vel;
     }
     public void set_ang(float ang){
-        angle = ang;
+        if(override) angle = ang;
     }
     public void set_override(boolean allow_override) {
         override = allow_override;
     }
+
     public void set_target(Location loc) {
         target = loc;
         if (last_loc != null && target != null) {
@@ -163,13 +163,13 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
                 if (last_loc == null || (System.currentTimeMillis() - last_loc_time > 5000) ||
                         target == null || is_at_target) {
                     // Lost or has no target so stop
-                    set_vel(0);
-                    set_ang(0);
+                    velocity = 0;
+                    angle = 0;
                     //Log.d("IOIO", "Set motors to stop");
                 } else {
                     // Correct path
-                    set_vel(1); // always move at the same speed...
-                    set_ang((mBearing - desiredBearing) * turn_factor);
+                    velocity = (0.15f); // always move at the same speed...
+                    angle = ((mBearing - desiredBearing) * turn_factor);
                     Log.d("IOIO", "Bearing diff: " + ((mBearing - desiredBearing)));
                 }
             }
@@ -184,37 +184,41 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
     class Looper extends BaseIOIOLooper {
         /** The on-board LED. */
         private DigitalOutput led_;
-        private PID pid1_;
-        private PID pid2_;
-        private PID pid3_;
-        private PID pid4_;
-
+        private PwmOutput pwm1_;
+        private PwmOutput pwm2_;
+        private PwmOutput pwm3_;
+        private PwmOutput pwm4_;
+        private DigitalOutput dir1_;
+        private DigitalOutput dir2_;
+        private DigitalOutput dir3_;
+        private DigitalOutput dir4_;
 
 
         /**
          * Called every time a connection with IOIO has been established.
          * Typically used to open pins.
          *
-         * @throws ioio.lib.api.exception.ConnectionLostException
+         * @throws ConnectionLostException
          *             When IOIO connection is lost.
          *
          */
         @Override
-        protected void setup() throws ConnectionLostException {
+        protected void setup() throws ConnectionLostException{
             led_ = ioio_.openDigitalOutput(0, true);
-            pid1_ = ioio_.openPID(1);
-            pid2_ = ioio_.openPID(2);
-            pid3_ = ioio_.openPID(3);
-            pid4_ = ioio_.openPID(4);
-            try {
-                pid1_.setParam(1,0,0);
-                pid2_.setParam(1,0,0);
-                pid3_.setParam(1,0,0);
-                pid4_.setParam(1,0,0);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Log.i("IOIOservice", "IOIO setup");
+
+            dir1_ = ioio_.openDigitalOutput(41, true);
+            dir2_ = ioio_.openDigitalOutput(42, true);
+            dir3_ = ioio_.openDigitalOutput(43, true);
+            dir4_ = ioio_.openDigitalOutput(44, true);
+
+            pwm1_ = ioio_.openPwmOutput(35,500);
+            pwm2_ = ioio_.openPwmOutput(36,500);
+            pwm3_ = ioio_.openPwmOutput(37,500);
+            pwm4_ = ioio_.openPwmOutput(38,500);
+            pwm1_.setDutyCycle(0);
+            pwm2_.setDutyCycle(0);
+            pwm3_.setDutyCycle(0);
+            pwm4_.setDutyCycle(0);
         }
 
         /**
@@ -230,24 +234,24 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
         @Override
         public void loop() throws ConnectionLostException, InterruptedException {
             led_.write(ledSTATE);
-            try {
-                float driveVel = velocity;
-                float driveAng = angle;
+            float driveVel = velocity;
+            float driveAng = angle;
 
-                float left = driveVel * (float)Math.cos((double)driveAng) + driveVel * (float)Math.sin((double)driveAng);
-                float right = -driveVel * (float)Math.cos((double)driveAng) + driveVel * (float)Math.sin((double)driveAng);
-                pid1_.setSpeed(left);
-                pid2_.setSpeed(right);
-                pid3_.setSpeed(-left);
-                pid4_.setSpeed(-right);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            float left = driveVel * (float)Math.cos((double)driveAng) + driveVel * (float)Math.sin((double)driveAng);
+            float right = driveVel * (float)Math.cos((double)driveAng) - driveVel * (float)Math.sin((double)driveAng);
+            pwm1_.setDutyCycle(Math.abs(left));
+            pwm2_.setDutyCycle(Math.abs(right));
+            pwm3_.setDutyCycle(Math.abs(left));
+            pwm4_.setDutyCycle(Math.abs(right));
+            dir1_.write(left > 0);
+            dir2_.write(right > 0);
+            dir3_.write(left < 0);
+            dir4_.write(right < 0);
 
-            speed1 = -pid1_.getSpeed();
-            speed2 = -pid2_.getSpeed();
-            speed3 = pid3_.getSpeed();
-            speed4 = pid4_.getSpeed();
+            speed1 = -left;
+            speed2 = -right;
+            speed3 = -left;
+            speed4 = -right;
             Thread.sleep(10);
         }
 
@@ -258,7 +262,6 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
          */
         @Override
         public void disconnected() {
-
         }
 
         /**
@@ -268,7 +271,6 @@ public class IOIOThread implements IOIOLooperProvider,GoogleApiClient.Connection
          */
         @Override
         public void incompatible() {
-
         }
     }
 

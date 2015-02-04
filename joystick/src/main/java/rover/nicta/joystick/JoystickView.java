@@ -47,7 +47,7 @@ public class JoystickView extends View {
         if(touching){
             double dx = -(firstTouchX - curTouchX);
             double dy = -(firstTouchY - curTouchY);
-            return (float)Math.atan2(dy , dx);
+            return (float)Math.atan2(dx , dy);
         }
         return 0f;
     }

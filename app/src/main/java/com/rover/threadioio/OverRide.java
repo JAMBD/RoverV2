@@ -84,8 +84,6 @@ public class OverRide extends Fragment {
                              Bundle savedInstanceState) {
         final View rootView = inflater.inflate(R.layout.drive, container, false);
 
-        getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         button_ = (ToggleButton) rootView.findViewById(R.id.button);
 
         sp1_ = (TextView) rootView.findViewById(R.id.speed1);
@@ -116,12 +114,14 @@ public class OverRide extends Fragment {
     @Override
     public void onPause() {
         ioio.set_override(false);
+        super.onPause();
     }
 
     // Allow automatic control
     @Override
     public void onResume() {
         ioio.set_override(true);
+        super.onResume();
     }
 
 }
